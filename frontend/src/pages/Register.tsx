@@ -23,8 +23,20 @@ export default function Register() {
       message.success("Registration successful!");
 
       navigate("/login");
-    } catch (error: any) {
-      message.error(error.response?.data?.message ?? "Registration failed");
+    } catch (error: unknown) {
+      if (typeof error === "object" && error !== null && "response" in error) {
+        const apiError = error as {
+          response?: {
+            data?: {
+              message?: string;
+            };
+          };
+        };
+
+        message.error(apiError.response?.data?.message ?? "Login failed");
+      } else {
+        message.error("Registration failed");
+      }
     }
   };
 

@@ -10,6 +10,24 @@ type Message = {
   text: string;
 };
 
+const getErrorMessage = (error: unknown): string => {
+  if (typeof error === "object" && error !== null && "response" in error) {
+    const response = (
+      error as {
+        response?: {
+          data?: {
+            message?: string;
+          };
+        };
+      }
+    ).response;
+
+    return response?.data?.message ?? "Sorry, I couldn't process your request.";
+  }
+
+  return "Sorry, I couldn't process your request.";
+};
+
 const AIAssistant = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [question, setQuestion] = useState("");
@@ -51,7 +69,7 @@ const AIAssistant = () => {
           text: data.answer || data,
         },
       ]);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("AI request failed:", error);
 
       setMessages((prev) => [
@@ -59,9 +77,7 @@ const AIAssistant = () => {
         {
           id: Date.now() + 1,
           sender: "ai",
-          text:
-            error.response?.data?.message ||
-            "Sorry, I couldn't process your request.",
+          text: getErrorMessage(error),
         },
       ]);
     } finally {

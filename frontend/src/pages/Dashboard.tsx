@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Student } from "../types/Student";
 import StudentForm from "../components/StudentForm";
 import StudentTable from "../components/StudentTable";
@@ -15,6 +15,15 @@ import {
 } from "../api/studentApi";
 import AIAssistant from "../components/AIAssistant";
 
+type ApiError = {
+  response?: {
+    data?: {
+      errors?: Record<string, string[]>;
+      message?: string;
+    };
+  };
+};
+
 function Dashboard() {
   const [students, setStudents] = useState<Student[]>([]);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
@@ -24,20 +33,25 @@ function Dashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("All");
 
-  // Load Students
-
-  const loadStudents = async () => {
-    try {
-      const data = await getStudents();
-      setStudents(data);
-    } catch (error) {
-      console.error(error);
-      message.error("Failed to load students.");
-    }
+  // Refresh students from the API
+  const refreshStudents = async () => {
+    const data = await getStudents();
+    setStudents(data);
   };
 
+  // Initial student loading
   useEffect(() => {
-    loadStudents();
+    const loadInitialStudents = async () => {
+      try {
+        const data = await getStudents();
+        setStudents(data);
+      } catch (error: unknown) {
+        console.error(error);
+        message.error("Failed to load students.");
+      }
+    };
+
+    void loadInitialStudents();
   }, []);
 
   // Modal
@@ -58,26 +72,28 @@ function Dashboard() {
   };
 
   // CRUD Operations
-
   const addStudent = async (student: Omit<Student, "id">) => {
     try {
       await addStudentApi(student);
 
-      await loadStudents();
+      await refreshStudents();
 
       setErrors({});
 
       message.success("Student added successfully.");
 
       closeModal();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
 
-      if (error.response?.data?.errors) {
-        setErrors(error.response.data.errors);
+      const apiError = error as ApiError;
+
+      if (apiError.response?.data?.errors) {
+        setErrors(apiError.response.data.errors);
       } else {
         message.error("Failed to add student.");
       }
+
       throw error;
     }
   };
@@ -86,21 +102,24 @@ function Dashboard() {
     try {
       await updateStudentApi(student);
 
-      await loadStudents();
+      await refreshStudents();
 
       setErrors({});
 
       message.success("Student updated successfully.");
 
       closeModal();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error(error);
 
-      if (error.response?.data?.errors) {
-        setErrors(error.response.data.errors);
+      const apiError = error as ApiError;
+
+      if (apiError.response?.data?.errors) {
+        setErrors(apiError.response.data.errors);
       } else {
         message.error("Failed to update student.");
       }
+
       throw error;
     }
   };
@@ -109,17 +128,16 @@ function Dashboard() {
     try {
       await deleteStudentApi(id);
 
-      await loadStudents();
+      await refreshStudents();
 
       message.success("Student deleted successfully.");
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(error);
       message.error("Failed to delete student.");
     }
   };
 
   // Search & Filter
-
   const filteredStudents = students.filter((student) => {
     const query = searchTerm.toLowerCase();
 
@@ -135,7 +153,6 @@ function Dashboard() {
   });
 
   // UI
-
   return (
     <div style={{ padding: "40px" }}>
       <Header onAddStudent={openAddModal} />
@@ -192,6 +209,7 @@ function Dashboard() {
         forceRender
       >
         <StudentForm
+          key={editingStudent?.id ?? "new"}
           onAddStudent={addStudent}
           onUpdateStudent={updateStudent}
           editingStudent={editingStudent}

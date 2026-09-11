@@ -24,8 +24,20 @@ const Login = () => {
       message.success("Login successful!");
 
       navigate("/");
-    } catch (error: any) {
-      message.error(error.response?.data?.message || "Login failed");
+    } catch (error: unknown) {
+      if (typeof error === "object" && error !== null && "response" in error) {
+        const apiError = error as {
+          response?: {
+            data?: {
+              message?: string;
+            };
+          };
+        };
+
+        message.error(apiError.response?.data?.message ?? "Login failed");
+      } else {
+        message.error("Login failed");
+      }
     }
   };
 

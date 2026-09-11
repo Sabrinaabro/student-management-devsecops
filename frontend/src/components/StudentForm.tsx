@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import type { Student } from "../types/Student";
-import { Button, Input, InputNumber, Select, Typography, message } from "antd";
+import { Button, Input, InputNumber, Select, Typography } from "antd";
 import { departments } from "../data/departments";
 
 type StudentFormProps = {
@@ -17,24 +17,12 @@ const StudentForm = ({
   editingStudent,
   errors,
 }: StudentFormProps) => {
-  const [name, setName] = useState("");
-  const [age, setAge] = useState<number | "">("");
-  const [department, setDepartment] = useState("");
-  const [email, setEmail] = useState("");
-
-  useEffect(() => {
-    if (editingStudent) {
-      setName(editingStudent.name);
-      setAge(editingStudent.age);
-      setDepartment(editingStudent.department);
-      setEmail(editingStudent.email);
-    } else {
-      setName("");
-      setAge("");
-      setDepartment("");
-      setEmail("");
-    }
-  }, [editingStudent]);
+  const [name, setName] = useState(editingStudent?.name ?? "");
+  const [age, setAge] = useState<number | "">(editingStudent?.age ?? "");
+  const [department, setDepartment] = useState(
+    editingStudent?.department ?? ""
+  );
+  const [email, setEmail] = useState(editingStudent?.email ?? "");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
